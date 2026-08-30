@@ -8,7 +8,7 @@ from noita_wand_parser import find_thumbnail_for_action, parse_wands_from_xml
 SAMPLE_XML = '''
 <Entity>
   <AbilityComponent ui_name="Test Wand" mana_max="200" mana_charge_speed="20" reload_time_frames="60" sprite_file="data/items_gfx/wands/wand_1234.png">
-    <gun_config deck_capacity="3" />
+    <gun_config deck_capacity="3" shuffle_deck_when_empty="1" />
     <gunaction_config fire_rate_wait="45" spread_degrees="12" />
   </AbilityComponent>
   <Entity>
@@ -33,6 +33,7 @@ class ParseWandsFromXmlTests(unittest.TestCase):
         self.assertEqual(wands[0]["deck_capacity"], 3)
         self.assertEqual(wands[0]["spread_degrees"], 12.0)
         self.assertEqual(wands[0]["sprite_id"], "wand_1234")
+        self.assertEqual(wands[0]["shuffle_deck_when_empty"], 1)
         self.assertEqual(wands[0]["spells"], ["BOMB", "FIREBALL", "BOUNCY_ORB"])
 
     def test_finds_thumbnail_by_spell_id(self):

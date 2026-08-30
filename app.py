@@ -228,6 +228,12 @@ def render_wand_section(wand):
     reload_s = wand["reload_time_frames"] / 60.0
     delay_s = wand["spellcast_delay_frames"] / 60.0
 
+    shuffle_value = wand.get("shuffle_deck_when_empty", 0)
+    if isinstance(shuffle_value, str):
+        shuffle_label = "Yes" if shuffle_value.strip().lower() in {"true", "yes", "1", "y"} else "No"
+    else:
+        shuffle_label = "Yes" if bool(shuffle_value) else "No"
+
     stat_values = [
         ("WAND", html.escape(wand.get("ui_name") or "Wand")),
         ("CAPACITY", wand["deck_capacity"]),
@@ -236,6 +242,7 @@ def render_wand_section(wand):
         ("CAST", f'{wand["spellcast_delay_frames"]:.0f}f ({delay_s:.2f}s)'),
         ("MANA", f'{wand["mana_max"]:.0f}'),
         ("SPREAD", f'{wand["spread_degrees"]:.0f}°'),
+        ("SHUFFLE", shuffle_label),
     ]
 
     stats = "".join(
@@ -254,7 +261,7 @@ def render_wand_section(wand):
         cards.append('<div style="width:110px; height:110px; border:2px dashed var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; margin:8px; opacity:0.7;"></div>')
 
     return (
-        '<section style="background:var(--wand-bg, #050505); border:var(--wand-border-width, 3px) solid var(--wand-border, rgba(255,255,255,0.08)); border-radius:14px; overflow:hidden; margin-bottom:28px; padding:12px 0 0; box-shadow:0 0 0 1px rgba(0,0,0,0.4);">'
+        '<section style="background:var(--wand-bg); border:var(--wand-border-width, 3px) solid var(--wand-border, rgba(255,255,255,0.08)); border-radius:0; overflow:hidden; margin-bottom:28px; padding:12px 0 0; box-shadow:0 0 0 1px rgba(0,0,0,0.4);">'
         '  <div style="display:flex; align-items:flex-start; gap:18px; padding:8px 18px 8px;">'
         f'    {render_wand_sprite(wand)}'
         '    <div style="flex:1; min-width:0; padding-top:8px;">'

@@ -48,6 +48,14 @@ def _parse_wand_entity(entity, source_name="uploaded_wand.xml"):
     if sprite_file:
         sprite_id = Path(sprite_file).stem
 
+    shuffle_deck_when_empty = 0
+    if gun_config is not None:
+        raw_shuffle = gun_config.attrib.get("shuffle_deck_when_empty", "0")
+        try:
+            shuffle_deck_when_empty = int(raw_shuffle)
+        except ValueError:
+            shuffle_deck_when_empty = 1 if str(raw_shuffle).strip().lower() in {"true", "yes", "y", "1"} else 0
+
     wand = {
         "file": source_name,
         "ui_name": ability.attrib.get("ui_name") or "(unnamed wand)",
@@ -59,6 +67,7 @@ def _parse_wand_entity(entity, source_name="uploaded_wand.xml"):
         "deck_capacity": int(gun_config.attrib.get("deck_capacity", 0)) if gun_config is not None else 0,
         "spellcast_delay_frames": float(gunaction_config.attrib.get("fire_rate_wait", 0)) if gunaction_config is not None else 0,
         "spread_degrees": float(gunaction_config.attrib.get("spread_degrees", 0)) if gunaction_config is not None else 0,
+        "shuffle_deck_when_empty": shuffle_deck_when_empty,
         "spells": [],
     }
 
