@@ -181,11 +181,22 @@ def render_spell_card(index, spell_id):
         icon_html = '<div style="width:56px;height:56px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background: rgba(0,0,0,0.25);border-radius:6px;color:#e07a5f;font-size:22px;font-weight:700;">?</div>'
 
     return (
-        '<div style="width:110px; border:var(--border-width, 2px) solid var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; padding:10px 8px; text-align:center; margin:8px;">'
+        '<div style="width:110px; border:var(--border-width, 2px) solid var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; padding:10px 8px; text-align:center; margin:8px; box-sizing:border-box;">'
         f'<div style="font-size:9px; color:#d9b994; margin-bottom:6px;">#{index + 1}</div>'
         f'{icon_html}'
         f'<div style="font-size:11px; font-weight:600; margin-top:6px;">{html.escape(spell_display_name(spell_id))}</div>'
         f'<div style="font-size:9px; color:#d9b994; margin-top:4px; word-break:break-word;">{html.escape(spell_id)}</div>'
+        '</div>'
+    )
+
+
+def render_empty_spell_card():
+    return (
+        '<div style="width:110px; border:var(--border-width, 2px) dashed var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; padding:10px 8px; text-align:center; margin:8px; box-sizing:border-box; opacity:0.7;">'
+        '<div style="font-size:9px; color:transparent; margin-bottom:6px;">#</div>'
+        '<div style="width:56px;height:56px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background: rgba(0,0,0,0.1);border-radius:6px;opacity:0.4;"></div>'
+        '<div style="font-size:11px; font-weight:600; margin-top:6px; color:transparent;">empty</div>'
+        '<div style="font-size:9px; color:transparent; margin-top:4px;">empty</div>'
         '</div>'
     )
 
@@ -258,7 +269,7 @@ def render_wand_section(wand):
         cards.append(render_spell_card(index, spell_id))
 
     for _ in range(max(0, wand["deck_capacity"] - len(wand["spells"]))):
-        cards.append('<div style="width:110px; border:var(--border-width, 2px) dashed var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; padding:10px 8px; text-align:center; margin:8px; opacity:0.7; min-height:110px; box-sizing:border-box;"></div>')
+        cards.append(render_empty_spell_card())
 
     return (
         '<section style="background:var(--wand-bg); border:var(--wand-border-width, 3px) solid var(--wand-border, rgba(255,255,255,0.08)); border-radius:0; overflow:hidden; margin-bottom:28px; padding:12px 0 0; box-shadow:0 0 0 1px rgba(0,0,0,0.4);">'
