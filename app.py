@@ -258,7 +258,7 @@ def render_wand_section(wand):
         cards.append(render_spell_card(index, spell_id))
 
     for _ in range(max(0, wand["deck_capacity"] - len(wand["spells"]))):
-        cards.append('<div style="width:110px; height:110px; border:2px dashed var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; margin:8px; opacity:0.7;"></div>')
+        cards.append('<div style="width:110px; border:var(--border-width, 2px) dashed var(--border, rgba(255,255,255,0.12)); background:var(--slot, rgba(255,255,255,0.04)); border-radius:10px; padding:10px 8px; text-align:center; margin:8px; opacity:0.7; min-height:110px; box-sizing:border-box;"></div>')
 
     return (
         '<section style="background:var(--wand-bg); border:var(--wand-border-width, 3px) solid var(--wand-border, rgba(255,255,255,0.08)); border-radius:0; overflow:hidden; margin-bottom:28px; padding:12px 0 0; box-shadow:0 0 0 1px rgba(0,0,0,0.4);">'
@@ -306,8 +306,11 @@ def render_results_page(file_names, wands):
       font-family: Consolas, Monaco, monospace;
     }}
     .page {{
-      max-width: 1200px;
+      width: min(100%, 2000px);
       margin: 0 auto;
+      padding-left: 12px;
+      padding-right: 12px;
+      box-sizing: border-box;
     }}
     h1 {{
       color: var(--text);
