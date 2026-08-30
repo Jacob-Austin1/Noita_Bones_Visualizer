@@ -25,27 +25,24 @@ No third-party packages required - standard library only.
 Configure the paths below before running.
 """
 
+import argparse
 import base64
 import glob
 import mimetypes
 import os
 import re
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 # ----------------------------------------------------------------------
-# Config - update these to match your machine
+# Defaults for a reusable project setup
 # ----------------------------------------------------------------------
 
-# Folder containing the wand *.xml files to visualize
-WAND_XML_DIR = r"C:\Users\Jacob\bones_new"
-
-# Folder containing the spell thumbnails downloaded by
-# download_noita_spell_thumbnails.py
-THUMBNAILS_DIR = r"C:\Users\Jacob\noita_spell_thumbnails"
-
-# Where to save the rendered HTML page
-OUTPUT_DIR = r"C:\Users\Jacob\noita_wand_visuals"
-OUTPUT_FILE = "wands.html"
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_WAND_XML_DIR = PROJECT_ROOT / "input" / "wands"
+DEFAULT_THUMBNAILS_DIR = PROJECT_ROOT / "assets" / "thumbnails"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output"
+DEFAULT_OUTPUT_FILE = "wands.html"
 
 FRAMES_PER_SECOND = 60
 
@@ -101,6 +98,46 @@ ACTION_ID_NAMES = {
     "LASER_LUMINOUS_DRILL": "Luminous drill with timer",
     "BOUNCY_ORB": "Energy sphere",
 }
+
+
+# ----------------------------------------------------------------------
+# CLI / project config
+# ----------------------------------------------------------------------
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Render Noita wand XML exports into a single HTML deck viewer."
+    )
+    parser.add_argument(
+        "--wand-dir",
+        type=Path,
+        default=DEFAULT_WAND_XML_DIR,
+        help="Folder containing wand XML files to visualize.",
+    )
+    parser.add_argument(
+        "--thumbnails-dir",
+        type=Path,
+        default=DEFAULT_THUMBNAILS_DIR,
+        help="Folder containing the downloaded spell thumbnails.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Folder where the generated HTML page will be written.",
+    )
+    parser.add_argument(
+        "--output-file",
+        default=DEFAULT_OUTPUT_FILE,
+        help="Filename for the generated HTML page.",
+    )
+    parser.add_argument(
+        "--fps",
+        type=float,
+        default=FRAMES_PER_SECOND,
+        help="Frames per second used when converting frame counts to seconds.",
+    )
+    return parser.parse_args()
 
 
 # ----------------------------------------------------------------------
@@ -352,7 +389,7 @@ def render_stat(label, value):
     return f'<div><div class="stat-label">{label}</div><div class="stat-value">{value}</div></div>'
 
 
-def render_spell_card(index, action_id, thumb_dir):
+def render_spell_card(index, action_id, thumb_dir, fps=FRAMES_PER_SECOND):
     name = display_name(action_id)
     thumb_path = find_thumbnail(action_id, thumb_dir)
     if thumb_path:
@@ -367,9 +404,9 @@ def render_spell_card(index, action_id, thumb_dir):
 </div>"""
 
 
-def render_wand_section(wand, thumb_dir):
-    reload_s = wand["reload_time_frames"] / FRAMES_PER_SECOND
-    delay_s = wand["spellcast_delay_frames"] / FRAMES_PER_SECOND
+def render_wand_section(wand, thumb_dir, fps=FRAMES_PER_SECOND):
+    reload_s = wand["reload_time_frames"] / fps
+    delay_s = wand["spellcast_delay_frames"] / fps
 
     stats_html = "".join([
         render_stat("Capacity", wand["deck_capacity"]),
@@ -381,7 +418,7 @@ def render_wand_section(wand, thumb_dir):
 
     cards_html = []
     for i, action_id in enumerate(wand["spells"]):
-        cards_html.append(render_spell_card(i, action_id, thumb_dir))
+        cards_html.append(render_spell_card(i, action_id, thumb_dir, fps=fps))
 
     empty_slots = max(0, wand["deck_capacity"] - len(wand["spells"]))
     cards_html.extend(['<div class="empty-slot"></div>'] * empty_slots)
@@ -397,8 +434,8 @@ def render_wand_section(wand, thumb_dir):
 </section>"""
 
 
-def render_page(wands, thumb_dir):
-    sections = "\n".join(render_wand_section(w, thumb_dir) for w in wands)
+def render_page(wands, thumb_dir, fps=FRAMES_PER_SECOND):
+    sections = "\n".join(render_wand_section(w, thumb_dir, fps=fps) for w in wands)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -419,14 +456,20 @@ def render_page(wands, thumb_dir):
 # ----------------------------------------------------------------------
 
 def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    args = parse_args()
+    wand_dir = args.wand_dir.expanduser().resolve()
+    thumbnails_dir = args.thumbnails_dir.expanduser().resolve()
+    output_dir = args.output_dir.expanduser().resolve()
+    output_file = args.output_file
 
-    xml_files = sorted(glob.glob(os.path.join(WAND_XML_DIR, "*.xml")))
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    xml_files = sorted(glob.glob(os.path.join(str(wand_dir), "*.xml")))
     if not xml_files:
-        print(f"No .xml files found in {WAND_XML_DIR}")
+        print(f"No .xml files found in {wand_dir}")
         return
 
-    print(f"Found {len(xml_files)} wand file(s)\n")
+    print(f"Found {len(xml_files)} wand file(s) in {wand_dir}\n")
 
     wands = []
     all_missing = set()
@@ -434,8 +477,8 @@ def main():
         wand = parse_wand(xml_path)
         wands.append(wand)
 
-        reload_s = wand["reload_time_frames"] / FRAMES_PER_SECOND
-        delay_s = wand["spellcast_delay_frames"] / FRAMES_PER_SECOND
+        reload_s = wand["reload_time_frames"] / args.fps
+        delay_s = wand["spellcast_delay_frames"] / args.fps
         print(f'{wand["file"]}: "{wand["ui_name"]}"')
         print(f'  capacity={wand["deck_capacity"]}  spells={len(wand["spells"])}  '
               f'reload={wand["reload_time_frames"]:.0f}f ({reload_s:.2f}s)  '
@@ -443,12 +486,12 @@ def main():
         print(f'  deck: {", ".join(wand["spells"]) if wand["spells"] else "(empty)"}')
 
         for action_id in wand["spells"]:
-            if find_thumbnail(action_id, THUMBNAILS_DIR) is None:
+            if find_thumbnail(action_id, str(thumbnails_dir)) is None:
                 all_missing.add(action_id)
         print()
 
-    html = render_page(wands, THUMBNAILS_DIR)
-    out_path = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
+    html = render_page(wands, str(thumbnails_dir), fps=args.fps)
+    out_path = output_dir / output_file
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -456,11 +499,13 @@ def main():
 
     if all_missing:
         print("\nSome spells had no matching thumbnail on disk (shown with a '?' in the page). Either:")
-        print("  - re-run download_noita_spell_thumbnails.py against the other")
+        print("  - re-run the thumbnail downloader against the other")
         print("    spell-type sections (Static Projectile, Projectile Modifier, etc.)")
         print("  - or add an entry to ACTION_ID_OVERRIDES in this script for:")
         for a in sorted(all_missing):
             print(f"      {a}")
+
+    print(f"\nOpen this in a browser or serve it locally with: python -m http.server 8000 --directory {output_dir}")
 
 
 if __name__ == "__main__":
